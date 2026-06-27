@@ -1,0 +1,43 @@
+{% extends "base_template.html" %}
+
+{% block title %}Media library{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-1">Media library</h1>
+<p class="text-muted mb-4" style="font-size:.86rem;">Upload and manage files. Copy a URL to use it anywhere.</p>
+
+<form method="POST" action="{{ url_for('media.admin_upload') }}" enctype="multipart/form-data" class="mb-4">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <input type="file" name="file" class="form-control" style="max-width:340px" required>
+        <input type="text" name="title" class="form-control" style="max-width:240px" placeholder="Title (optional)">
+        <button class="btn btn-primary" type="submit">Upload</button>
+    </div>
+</form>
+
+<div class="row g-3">
+    {% for m in items %}
+    <div class="col-6 col-md-3">
+        <div class="card h-100">
+            {% if m.is_image %}
+            <img src="{{ m.url }}" class="card-img-top" style="height:140px;object-fit:cover" alt="{{ m.alt }}">
+            {% else %}
+            <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height:140px;font-size:2rem">📄</div>
+            {% endif %}
+            <div class="card-body p-2">
+                <p class="small text-truncate mb-1" title="{{ m.title or m.filename }}">{{ m.title or m.filename }}</p>
+                <div class="d-flex justify-content-between align-items-center">
+                    <code class="small text-muted text-truncate" style="max-width:120px">{{ m.url }}</code>
+                    <form method="POST" action="{{ url_for('media.admin_delete', item_id=m.id) }}" onsubmit="return confirm('Delete this file?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm btn-outline-danger py-0 px-1" type="submit">✕</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <p class="text-muted">No media yet. Upload something above.</p>
+    {% endfor %}
+</div>
+{% endblock %}

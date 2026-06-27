@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=80.3.1", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "splent_feature_media"
+version = "0.0.1"
+readme = "README.md"
+requires-python = ">=3.13"
+
+dependencies = [
+
+]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["*.tests", "*.tests.*"]
+
+[tool.splent]
+cli_version = "1.11.0"
+
+# ── Feature Contract ──────────────────────────────────────────────────────────
+# Declares what this feature provides to and requires from the product.
+# Used by `splent feature:check` and `splent product:derive` for validation.
+[tool.splent.contract]
+description = "Media library — upload and manage files (the WordPress Media Library analogue)"
+
+[tool.splent.contract.provides]
+# Routes exposed by this feature
+routes = ["/media", "/admin/media", "/admin/media/upload", "/admin/media/<int:item_id>/delete"]
+# Blueprint names registered into Flask
+blueprints = ["media_bp"]
+# SQLAlchemy models introduced by this feature
+models = ["MediaItem"]
+# CLI commands added by this feature
+commands = []
+
+[tool.splent.contract.requires]
+# Other SPLENT features this feature depends on (e.g. ["auth", "mail"])
+features = ["theme", "auth"]
+# Environment variables this feature expects to be set
+env_vars = []
+
+# ── Extension points ──────────────────────────────────────────────────────────
+# Declares what other features can override or extend via refinement.
+# See: splent feature:xray
+[tool.splent.contract.extensible]
+services = []
+templates = ["media/gallery.html", "media/admin.html"]
+models = []
+hooks = []
+routes = false

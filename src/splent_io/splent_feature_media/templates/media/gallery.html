@@ -1,0 +1,21 @@
+{% extends "public_base.html" %}
+
+{% block title %}Gallery — {{ site.name }}{% endblock %}
+
+{% block hero %}
+    {{ render_block('hero', eyebrow='Media', title='Gallery') }}
+{% endblock %}
+
+{% block content %}
+<div class="container section">
+    <div class="gallery-grid">
+        {% for m in items if m.is_image %}
+        <a class="gallery-grid__item" href="{{ m.url }}" target="_blank" rel="noopener">
+            <img src="{{ m.url }}" alt="{{ m.alt }}" loading="lazy">
+        </a>
+        {% else %}
+        <p class="card__text">No media yet.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
