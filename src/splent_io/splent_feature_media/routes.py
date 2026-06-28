@@ -51,9 +51,7 @@ def admin_detail(item_id):
         return redirect(url_for("media.admin_detail", item_id=item.id))
 
     dimensions = media_service.dimensions(item)
-    return render_template(
-        "media/admin_detail.html", item=item, dimensions=dimensions
-    )
+    return render_template("media/admin_detail.html", item=item, dimensions=dimensions)
 
 
 @media_bp.route("/admin/media/<int:item_id>/crop", methods=["POST"])

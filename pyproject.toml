@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "splent_feature_media"
-version = "0.0.1"
+version = "0.1.0"
 readme = "README.md"
 requires-python = ">=3.13"
 
@@ -23,34 +23,30 @@ exclude = ["*.tests", "*.tests.*"]
 [tool.splent]
 cli_version = "1.11.0"
 
-# ── Feature Contract ──────────────────────────────────────────────────────────
-# Declares what this feature provides to and requires from the product.
-# Used by `splent feature:check` and `splent product:derive` for validation.
+# ── Feature Contract (auto-generated) ────────────────────────────────────────
+# Do not edit manually — re-run `splent feature:contract --write` to refresh.
 [tool.splent.contract]
 description = "Media library — upload and manage files (the WordPress Media Library analogue)"
 
 [tool.splent.contract.provides]
-# Routes exposed by this feature
-routes = ["/media", "/admin/media", "/admin/media/upload", "/admin/media/<int:item_id>", "/admin/media/<int:item_id>/crop", "/admin/media/<int:item_id>/delete"]
-# Blueprint names registered into Flask
-blueprints = ["media_bp"]
-# SQLAlchemy models introduced by this feature
-models = ["MediaItem"]
-# CLI commands added by this feature
-commands = []
+routes     = ["/admin/media", "/admin/media/<int:item_id>", "/admin/media/<int:item_id>/crop", "/admin/media/<int:item_id>/delete", "/admin/media/upload", "/media"]
+blueprints = []
+models     = ["MediaItem"]
+commands   = ["hello"]
+hooks      = ["layout.authenticated_sidebar"]
+services   = ["MediaService"]
+signals    = []
+translations = []
+docker     = []
 
 [tool.splent.contract.requires]
-# Other SPLENT features this feature depends on (e.g. ["auth", "mail"])
-features = ["theme", "auth"]
-# Environment variables this feature expects to be set
+features = []
 env_vars = []
+signals  = []
 
-# ── Extension points ──────────────────────────────────────────────────────────
-# Declares what other features can override or extend via refinement.
-# See: splent feature:xray
 [tool.splent.contract.extensible]
-services = []
-templates = ["media/gallery.html", "media/admin.html", "media/admin_detail.html", "media/_picker.html"]
-models = []
-hooks = []
-routes = false
+services  = ["MediaService"]
+templates = ["media/admin.html", "media/admin_detail.html", "media/gallery.html", "media/index.html"]
+models    = ["MediaItem"]
+hooks     = ["layout.authenticated_sidebar"]
+routes    = false

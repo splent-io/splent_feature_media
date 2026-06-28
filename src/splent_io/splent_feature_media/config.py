@@ -11,7 +11,9 @@ import os  # noqa: F401 — used when adding env vars below
 
 
 def inject_config(app):
-    app.config.update({
-        # Add your feature's env vars here, e.g.:
-        # "MY_VAR": os.getenv("MY_VAR", "default_value"),
-    })
+    app.config.update(
+        {
+            # Add your feature's env vars here, e.g.:
+            # "MY_VAR": os.getenv("MY_VAR", "default_value"),
+        }
+    )
