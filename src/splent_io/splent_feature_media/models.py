@@ -11,6 +11,7 @@ class MediaItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(512), nullable=False)
     url = db.Column(db.String(512), nullable=False)  # /static/uploads/<filename>
+    source_url = db.Column(db.String(1024), default="")  # original URL when imported
     alt = db.Column(db.String(255), default="")
     title = db.Column(db.String(255), default="")
     mime_type = db.Column(db.String(128), default="")
