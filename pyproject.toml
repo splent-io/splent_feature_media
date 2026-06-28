@@ -9,7 +9,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 
 dependencies = [
-
+    "Pillow>=10",
 ]
 
 [tool.setuptools]
@@ -31,7 +31,7 @@ description = "Media library — upload and manage files (the WordPress Media Li
 
 [tool.splent.contract.provides]
 # Routes exposed by this feature
-routes = ["/media", "/admin/media", "/admin/media/upload", "/admin/media/<int:item_id>/delete"]
+routes = ["/media", "/admin/media", "/admin/media/upload", "/admin/media/<int:item_id>", "/admin/media/<int:item_id>/crop", "/admin/media/<int:item_id>/delete"]
 # Blueprint names registered into Flask
 blueprints = ["media_bp"]
 # SQLAlchemy models introduced by this feature
@@ -50,7 +50,7 @@ env_vars = []
 # See: splent feature:xray
 [tool.splent.contract.extensible]
 services = []
-templates = ["media/gallery.html", "media/admin.html"]
+templates = ["media/gallery.html", "media/admin.html", "media/admin_detail.html", "media/_picker.html"]
 models = []
 hooks = []
 routes = false

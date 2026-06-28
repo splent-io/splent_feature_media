@@ -1,6 +1,12 @@
 # Compiled frontend bundles
 recursive-include src/splent_io/splent_feature_media/assets/dist *.js *.css *.map
 
+# Source assets served via the feature asset route (media.assets):
+#   - picker.css  : shared media_picker() styles
+#   - cropper.min.js / cropper.min.css : Cropper.js, served LOCALLY (no CDN)
+recursive-include src/splent_io/splent_feature_media/assets/js *.js
+recursive-include src/splent_io/splent_feature_media/assets/css *.css
+
 # Jinja templates (feature views + hook fragments)
 recursive-include src/splent_io/splent_feature_media/templates *.html
 

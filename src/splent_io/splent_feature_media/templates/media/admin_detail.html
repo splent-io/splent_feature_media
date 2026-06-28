@@ -1,0 +1,215 @@
+{% extends "base_template.html" %}
+
+{% block title %}{{ item.title or item.filename }} — Media{% endblock %}
+
+{% block head %}
+  {# Cropper.js styles, served LOCALLY as a media feature asset (never a CDN). #}
+  <link rel="stylesheet"
+        href="{{ url_for('media.assets', subfolder='css', filename='cropper.min.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Edit media</h1>
+    <a href="{{ url_for('media.admin_index') }}" class="btn btn-outline-secondary">← Back to library</a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category in ('danger', 'error') else ('warning' if category == 'warning' else 'success') }} py-2">{{ message }}</div>
+    {% endfor %}
+{% endwith %}
+
+<div class="row g-4">
+    <!-- Preview / editor -->
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-body">
+                {% if item.is_image %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="text-muted small">Preview</span>
+                    <div class="btn-group btn-group-sm" role="group" data-media-edit-toggle>
+                        <button type="button" class="btn btn-outline-primary" data-edit-start>Edit image</button>
+                        <button type="button" class="btn btn-outline-secondary d-none" data-edit-cancel>Cancel edit</button>
+                    </div>
+                </div>
+
+                <div class="media-detail__stage" style="max-height:520px;overflow:hidden;background:#f8f9fa;">
+                    <img id="media-detail-image" src="{{ item.url }}" alt="{{ item.alt or item.title }}"
+                         style="max-width:100%;display:block;">
+                </div>
+
+                <!-- Crop toolbar (hidden until "Edit image") -->
+                <div class="mt-3 d-none" data-edit-tools>
+                    <div class="btn-toolbar gap-2" role="toolbar">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-secondary" data-crop-rotate="-90" title="Rotate left">⟲ -90°</button>
+                            <button type="button" class="btn btn-outline-secondary" data-crop-rotate="90" title="Rotate right">⟳ +90°</button>
+                            <button type="button" class="btn btn-outline-secondary" data-crop-reset title="Reset">Reset</button>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-primary"
+                                data-crop-save
+                                data-crop-url="{{ url_for('media.admin_crop', item_id=item.id) }}">Save crop as new image</button>
+                    </div>
+                    <p class="form-text mb-0">The original is preserved; the crop is saved as a new media item.</p>
+                </div>
+                {% else %}
+                <div class="d-flex align-items-center justify-content-center bg-light rounded"
+                     style="height:240px"><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></div>
+                <p class="text-muted small mt-2 mb-0">This file is not an image, so it cannot be cropped.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Metadata -->
+    <div class="col-lg-5">
+        <div class="card mb-3">
+            <div class="card-body">
+                <h2 class="h6 text-uppercase text-muted mb-3">Details</h2>
+                <dl class="row small mb-0">
+                    <dt class="col-5 text-muted">Filename</dt>
+                    <dd class="col-7 text-truncate" title="{{ item.filename }}">{{ item.filename }}</dd>
+
+                    <dt class="col-5 text-muted">URL</dt>
+                    <dd class="col-7"><code class="text-truncate d-inline-block" style="max-width:100%" title="{{ item.url }}">{{ item.url }}</code></dd>
+
+                    <dt class="col-5 text-muted">Type</dt>
+                    <dd class="col-7">{{ item.mime_type or '—' }}</dd>
+
+                    <dt class="col-5 text-muted">Dimensions</dt>
+                    <dd class="col-7">{% if dimensions %}{{ dimensions[0] }} × {{ dimensions[1] }} px{% else %}—{% endif %}</dd>
+
+                    <dt class="col-5 text-muted">File size</dt>
+                    <dd class="col-7">{{ '%.1f'|format((item.size or 0) / 1024) }} KB</dd>
+
+                    <dt class="col-5 text-muted">Uploaded</dt>
+                    <dd class="col-7">{{ item.uploaded_at.strftime('%Y-%m-%d %H:%M') if item.uploaded_at else '—' }}</dd>
+
+                    {% if item.source_url %}
+                    <dt class="col-5 text-muted">Source</dt>
+                    <dd class="col-7"><a href="{{ item.source_url }}" target="_blank" rel="noopener" class="text-truncate d-inline-block" style="max-width:100%">{{ item.source_url }}</a></dd>
+                    {% endif %}
+                </dl>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <form method="POST" action="{{ url_for('media.admin_detail', item_id=item.id) }}">
+                <div class="card-body">
+                    <h2 class="h6 text-uppercase text-muted mb-3">Metadata</h2>
+                    <div class="mb-3">
+                        <label class="form-label" for="media-title">Title</label>
+                        <input id="media-title" name="title" class="form-control" value="{{ item.title or '' }}">
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label" for="media-alt">Alt text</label>
+                        <input id="media-alt" name="alt" class="form-control" value="{{ item.alt or '' }}"
+                               placeholder="Describe the image for accessibility">
+                    </div>
+                </div>
+                <div class="card-footer text-end">
+                    <button class="btn btn-primary" type="submit">Save details</button>
+                </div>
+            </form>
+        </div>
+
+        <form method="POST" action="{{ url_for('media.admin_delete', item_id=item.id) }}"
+              onsubmit="return confirm('Delete this file permanently?')">
+            <button class="btn btn-outline-danger w-100" type="submit">Delete media</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if item.is_image %}
+  {# Cropper.js, served LOCALLY as a media feature asset (never a CDN). #}
+  <script src="{{ url_for('media.assets', subfolder='js', filename='cropper.min.js') }}"></script>
+  <script>
+    (function () {
+      var image = document.getElementById('media-detail-image');
+      if (!image || typeof Cropper === 'undefined') return;
+
+      var toggle = document.querySelector('[data-media-edit-toggle]');
+      var startBtn = document.querySelector('[data-edit-start]');
+      var cancelBtn = document.querySelector('[data-edit-cancel]');
+      var tools = document.querySelector('[data-edit-tools]');
+      var saveBtn = document.querySelector('[data-crop-save]');
+      var cropper = null;
+
+      function start() {
+        cropper = new Cropper(image, {
+          viewMode: 1,
+          autoCropArea: 0.8,
+          background: false,
+          responsive: true,
+        });
+        startBtn.classList.add('d-none');
+        cancelBtn.classList.remove('d-none');
+        tools.classList.remove('d-none');
+      }
+
+      function stop() {
+        if (cropper) { cropper.destroy(); cropper = null; }
+        startBtn.classList.remove('d-none');
+        cancelBtn.classList.add('d-none');
+        tools.classList.add('d-none');
+      }
+
+      startBtn.addEventListener('click', start);
+      cancelBtn.addEventListener('click', stop);
+
+      document.querySelectorAll('[data-crop-rotate]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (!cropper) return;
+          var deg = parseInt(btn.getAttribute('data-crop-rotate'), 10);
+          cropper.rotate(deg);
+        });
+      });
+
+      var resetBtn = document.querySelector('[data-crop-reset]');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', function () {
+          if (!cropper) return;
+          cropper.reset();
+        });
+      }
+
+      // Save: getCroppedCanvas() bakes in BOTH rotation and crop, so the canvas
+      // is the single source of truth. We export it to a Blob and POST it as
+      // multipart form-data; the backend just stores the already-finished image.
+      if (saveBtn) {
+        saveBtn.addEventListener('click', function () {
+          if (!cropper) return;
+          var canvas = cropper.getCroppedCanvas();
+          if (!canvas) return;
+
+          var mime = image.src && image.src.indexOf('.png') !== -1 ? 'image/png' : 'image/jpeg';
+          var url = saveBtn.getAttribute('data-crop-url');
+          saveBtn.disabled = true;
+
+          canvas.toBlob(function (blob) {
+            if (!blob) { saveBtn.disabled = false; return; }
+            var fd = new FormData();
+            fd.append('image', blob, 'crop');
+
+            fetch(url, { method: 'POST', body: fd, credentials: 'same-origin' })
+              .then(function (resp) {
+                if (resp.redirected) { window.location.href = resp.url; return; }
+                if (!resp.ok) throw new Error('Crop failed');
+                return resp.json().then(function (data) {
+                  window.location.href = data.url || url;
+                });
+              })
+              .catch(function () {
+                saveBtn.disabled = false;
+                window.alert('Could not save the cropped image.');
+              });
+          }, mime);
+        });
+      }
+    })();
+  </script>
+{% endif %}
+{% endblock %}

@@ -18,17 +18,21 @@
     {% for m in items %}
     <div class="col-6 col-md-3">
         <div class="card h-100">
+            <a href="{{ url_for('media.admin_detail', item_id=m.id) }}" class="text-decoration-none text-reset" title="Edit details">
             {% if m.is_image %}
             <img src="{{ m.url }}" class="card-img-top" style="height:140px;object-fit:cover" alt="{{ m.alt }}">
             {% else %}
-            <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height:140px;font-size:2rem">📄</div>
+            <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height:140px"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></div>
             {% endif %}
+            </a>
             <div class="card-body p-2">
+                <a href="{{ url_for('media.admin_detail', item_id=m.id) }}" class="text-decoration-none text-reset">
                 <p class="small text-truncate mb-1" title="{{ m.title or m.filename }}">{{ m.title or m.filename }}</p>
+                </a>
                 <div class="d-flex justify-content-between align-items-center">
                     <code class="small text-muted text-truncate" style="max-width:120px">{{ m.url }}</code>
                     <form method="POST" action="{{ url_for('media.admin_delete', item_id=m.id) }}" onsubmit="return confirm('Delete this file?')">
-                        <button class="btn btn-sm btn-outline-danger py-0 px-1" type="submit">✕</button>
+                        <button class="btn btn-sm btn-outline-danger py-0 px-1" type="submit" title="Delete"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
                     </form>
                 </div>
             </div>

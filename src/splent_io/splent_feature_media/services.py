@@ -17,6 +17,116 @@ class MediaService(BaseService):
     def list_recent(self):
         return self.repository.list_recent()
 
+    def get(self, item_id: int):
+        """Fetch a single MediaItem by id (or None)."""
+        return self.repository.get_by_id(item_id)
+
+    def update_meta(self, item, alt: str = "", title: str = ""):
+        """Update the editable metadata (alt text + title) of a media item."""
+        if item is None:
+            return None
+        item.alt = alt or ""
+        item.title = title or ""
+        db.session.commit()
+        return item
+
+    def _abs_path(self, item) -> str:
+        """Absolute path to the item's file inside static/uploads/."""
+        return os.path.join(current_app.static_folder, "uploads", item.filename)
+
+    def dimensions(self, item):
+        """Return (width, height) in pixels for an image item, else None.
+
+        Uses Pillow and is defensive: any failure (missing file, non-image,
+        unreadable) returns None so the detail page still renders.
+        """
+        if item is None or not item.is_image:
+            return None
+        try:
+            from PIL import Image
+
+            with Image.open(self._abs_path(item)) as im:
+                return im.size  # (width, height)
+        except Exception:
+            return None
+
+    def save_cropped(self, item, file_storage):
+        """Persist an already-cropped image (from the client) as a NEW MediaItem.
+
+        The crop + rotation geometry is performed entirely on the client by
+        Cropper.js (``getCroppedCanvas()``), which is the single source of
+        truth: the browser ships the finished pixels. Here we only validate the
+        bytes with Pillow, normalise to a safe format, and save it alongside the
+        original (the original file and record are preserved). ``file_storage``
+        is the uploaded werkzeug FileStorage. Returns the new MediaItem, or None
+        if the item is not an image or the upload is not a decodable image.
+        """
+        if item is None or not item.is_image:
+            return None
+        if file_storage is None:
+            return None
+
+        try:
+            from PIL import Image
+        except Exception:
+            return None
+
+        # Validate + decode the uploaded bytes. A non-image upload is rejected.
+        try:
+            file_storage.stream.seek(0)
+            im = Image.open(file_storage.stream)
+            im.load()
+        except Exception:
+            return None
+
+        # Normalise format/extension from the ORIGINAL so the crop matches it.
+        base, ext = os.path.splitext(item.filename)
+        ext = ext.lower()
+        if ext in (".jpg", ".jpeg"):
+            fmt, out_ext = "JPEG", ext
+            if im.mode != "RGB":
+                im = im.convert("RGB")
+        elif ext == ".webp":
+            fmt, out_ext = "WEBP", ".webp"
+        else:
+            fmt, out_ext = "PNG", ".png"
+            if im.mode not in ("RGB", "RGBA"):
+                im = im.convert("RGBA")
+
+        # Collision-safe filename in the product's static/uploads/.
+        upload_dir = self._upload_dir()
+        candidate = f"{base}-cropped{out_ext}"
+        i = 1
+        while os.path.exists(os.path.join(upload_dir, candidate)):
+            i += 1
+            candidate = f"{base}-cropped-{i}{out_ext}"
+
+        out_path = os.path.join(upload_dir, candidate)
+        try:
+            im.save(out_path, fmt)
+        except Exception:
+            return None
+
+        mime = {
+            "JPEG": "image/jpeg",
+            "PNG": "image/png",
+            "WEBP": "image/webp",
+        }.get(fmt, "image/png")
+
+        new_item = MediaItem(
+            filename=candidate,
+            url=f"/static/uploads/{candidate}",
+            source_url=item.source_url or "",
+            alt=item.alt or "",
+            title=f"{item.title or item.filename} (cropped)",
+            mime_type=mime,
+            size=os.path.getsize(out_path),
+            uploaded_at=datetime.utcnow(),
+        )
+        db.session.add(new_item)
+        db.session.commit()
+        return new_item
+
     def _upload_dir(self) -> str:
         d = os.path.join(current_app.static_folder, "uploads")
         os.makedirs(d, exist_ok=True)

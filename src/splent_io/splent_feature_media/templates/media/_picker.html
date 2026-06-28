@@ -1,0 +1,137 @@
+{#
+  ============================================================================
+  Reusable Media picker macro  (SPLENT media feature)
+  ============================================================================
+
+  A WordPress-style "choose from the Media Library" control. Renders a
+  responsive grid of image options as <label> radios, plus a client-side
+  search box so large libraries stay usable. This is the ONE shared picker —
+  features must NOT roll their own ad-hoc grid of radios.
+
+  Import & use from any admin template (shown without Jinja delimiters; wrap
+  the import in a {%-statement-%} and each call in a {{-expression-}}):
+
+      from "media/_picker.html" import media_picker
+
+      Feature stores a media *id* (slider, partners, ...):
+        media_picker("media_id", slide.media_id if slide else None, media)
+
+      Feature stores the image *url* (post featured_image, ...):
+        media_picker("featured_image",
+                     post.featured_image if post else None,
+                     media, value_attr="url")
+
+  Parameters:
+    field_name  : str   name of the emitted radio inputs (the form field).
+    selected    : any   currently selected value (id or url); compared as str.
+    items       : list  MediaItem objects to offer (pass image-only if wanted).
+    value_attr  : str   attribute of MediaItem used as the option value.
+                        "id"  -> stores the media id   (default)
+                        "url" -> stores "/static/uploads/<f>"
+    allow_none  : bool  include a "No image" option (value ""). Default true.
+
+  Styling: the picker's CSS lives in a media asset (assets/css/picker.css) and
+  is <link>ed exactly once per page by this macro itself (guarded), so consumers
+  do not have to remember to add it and it is never duplicated per feature.
+
+  Requires `url_for('media.assets', ...)` to resolve, i.e. the media feature
+  must be installed in the product (it always is — it owns the library).
+  ============================================================================
+#}
+
+{% macro media_picker(field_name, selected, items, value_attr="id", allow_none=true) %}
+  {# The shared stylesheet + behaviour script are emitted here. They are
+     idempotent: the <link> is identical (the browser loads/applies it once
+     from cache) and the script self-guards with window.__MEDIA_PICKER_JS__,
+     so rendering several pickers on one page never duplicates behaviour. #}
+  {{ _media_picker_styles() }}
+
+  <div class="media-picker" data-media-picker>
+    <input type="search"
+           class="form-control form-control-sm media-picker__search"
+           placeholder="Search media (alt, title, filename)…"
+           data-media-picker-search
+           aria-label="Filter media">
+
+    <div class="media-picker__grid" data-media-picker-grid>
+      {% if allow_none %}
+      <label class="media-picker__item media-picker__item--none" data-media-haystack="">
+        <input type="radio" name="{{ field_name }}" value=""
+               {{ 'checked' if (selected is none or (selected | string) == '') else '' }}>
+        <span class="media-picker__none">
+          <i class="align-middle" data-feather="slash"></i>
+          <span>No image</span>
+        </span>
+      </label>
+      {% endif %}
+
+      {% for m in items %}
+      {% set opt_value = m | attr(value_attr) %}
+      <label class="media-picker__item"
+             data-media-haystack="{{ (m.alt ~ ' ' ~ m.title ~ ' ' ~ m.filename) | lower }}">
+        <input type="radio" name="{{ field_name }}" value="{{ opt_value }}"
+               {{ 'checked' if (selected | string) == (opt_value | string) else '' }}>
+        <img src="{{ m.url }}" alt="{{ m.alt or m.title or m.filename }}"
+             title="{{ m.title or m.filename }}">
+      </label>
+      {% endfor %}
+    </div>
+
+    <p class="media-picker__empty d-none" data-media-picker-empty>No media matches your search.</p>
+
+    {% if not items %}
+    <div class="form-text">No images in the media library yet.</div>
+    {% endif %}
+  </div>
+
+  {{ _media_picker_script() }}
+{% endmacro %}
+
+
+{# ── CSS: linked from the media asset (idempotent identical <link>) ───────── #}
+{% macro _media_picker_styles() %}
+  <link rel="stylesheet"
+        href="{{ url_for('media.assets', subfolder='css', filename='picker.css') }}"
+        data-media-picker-css>
+{% endmacro %}
+
+
+{# ── JS: client-side search/filter. Emitted once per page (guarded by id). ── #}
+{% macro _media_picker_script() %}
+  <script data-media-picker-js>
+    (function () {
+      if (window.__MEDIA_PICKER_JS__) return;
+      window.__MEDIA_PICKER_JS__ = true;
+
+      function wire(root) {
+        var search = root.querySelector('[data-media-picker-search]');
+        var grid = root.querySelector('[data-media-picker-grid]');
+        var empty = root.querySelector('[data-media-picker-empty]');
+        if (!search || !grid) return;
+
+        search.addEventListener('input', function () {
+          var q = search.value.trim().toLowerCase();
+          var visible = 0;
+          grid.querySelectorAll('.media-picker__item').forEach(function (item) {
+            // Always keep the "No image" option visible.
+            if (item.classList.contains('media-picker__item--none')) { visible++; return; }
+            var hay = item.getAttribute('data-media-haystack') || '';
+            var show = !q || hay.indexOf(q) !== -1;
+            item.classList.toggle('media-picker__item--hidden', !show);
+            if (show) visible++;
+          });
+          if (empty) empty.classList.toggle('d-none', visible > 0);
+        });
+      }
+
+      function init() {
+        document.querySelectorAll('[data-media-picker]').forEach(wire);
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+{% endmacro %}

@@ -1,0 +1,66 @@
+/* Shared media picker styles (served as a media feature asset).
+ * Consuming admin templates <link> this via:
+ *   url_for('media.assets', subfolder='css', filename='picker.css')
+ * Used by the media_picker() macro in templates/media/_picker.html.
+ */
+.media-picker {
+    margin: 0;
+}
+.media-picker__search {
+    max-width: 320px;
+    margin-bottom: .75rem;
+}
+.media-picker__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: .75rem;
+}
+.media-picker__item {
+    position: relative;
+    margin: 0;
+    cursor: pointer;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 16 / 10;
+    display: block;
+    background: #f8f9fa;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+.media-picker__item input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    margin: 0;
+    cursor: pointer;
+}
+.media-picker__item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.media-picker__none {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: .25rem;
+    color: #6b7280;
+    font-size: .8rem;
+    text-align: center;
+}
+/* :checked highlight — the input is the first child, the visual is its sibling */
+.media-picker__item:has(input:checked) {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, .25);
+}
+.media-picker__item--hidden {
+    display: none !important;
+}
+.media-picker__empty {
+    color: #6b7280;
+    font-size: .85rem;
+}
