@@ -25,8 +25,11 @@ cli_version = "1.11.0"
 
 # ── Feature Contract (auto-generated) ────────────────────────────────────────
 # Do not edit manually — re-run `splent feature:contract --write` to refresh.
+# Preserved across refreshes: description, category, tags, env, and
+# requires.features_manual (dependencies invisible to static analysis).
 [tool.splent.contract]
 description = "Media library — upload and manage files (the WordPress Media Library analogue)"
+archetype = "full"
 
 [tool.splent.contract.provides]
 routes     = ["/admin/media", "/admin/media/<int:item_id>", "/admin/media/<int:item_id>/crop", "/admin/media/<int:item_id>/delete", "/admin/media/upload", "/media"]
@@ -40,7 +43,8 @@ translations = []
 docker     = []
 
 [tool.splent.contract.requires]
-features = []
+features = ["auth"]
+features_manual = ["auth"]
 env_vars = []
 signals  = []
 
