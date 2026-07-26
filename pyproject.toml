@@ -28,7 +28,7 @@ cli_version = "1.11.0"
 # Preserved across refreshes: description, category, tags, env, and
 # requires.features_manual (dependencies invisible to static analysis).
 [tool.splent.contract]
-description = "Media library — upload and manage files (the WordPress Media Library analogue)"
+description = "Media library to upload and manage files (the WordPress Media Library analogue)"
 archetype = "full"
 
 [tool.splent.contract.provides]
