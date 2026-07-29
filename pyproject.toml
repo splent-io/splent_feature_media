@@ -32,7 +32,7 @@ description = "Media library to upload and manage files (the WordPress Media Lib
 archetype = "full"
 
 [tool.splent.contract.provides]
-routes     = ["/admin/media", "/admin/media/<int:item_id>", "/admin/media/<int:item_id>/crop", "/admin/media/<int:item_id>/delete", "/admin/media/upload", "/media"]
+routes     = ["/admin/media", "/admin/media/<int:item_id>", "/admin/media/<int:item_id>/crop", "/admin/media/<int:item_id>/delete", "/admin/media/upload", "/media", "/media/file/<int:item_id>"]
 blueprints = []
 models     = ["MediaItem"]
 commands   = ["hello"]
@@ -45,7 +45,7 @@ docker     = []
 [tool.splent.contract.requires]
 features = ["auth"]
 features_manual = ["auth"]
-env_vars = []
+env_vars = ["MEDIA_PUBLIC_GALLERY", "PROTECTED_FILES_ACCEL_PREFIX", "PROTECTED_UPLOADS_DIR"]
 signals  = []
 
 [tool.splent.contract.extensible]

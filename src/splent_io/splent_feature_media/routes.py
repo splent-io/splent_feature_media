@@ -1,27 +1,81 @@
-from flask import abort, flash, jsonify, redirect, render_template, request, url_for
-from flask_login import login_required
+from flask import (
+    abort,
+    current_app,
+    flash,
+    jsonify,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
+from flask_login import current_user
 
 from splent_io.splent_feature_media import media_bp
+from splent_framework.decorators.decorators import role_required
+from splent_framework.services.file_access import (
+    resolve_file_access,
+    send_protected_file,
+)
 from splent_framework.services.service_locator import service_proxy
 
 media_service = service_proxy("MediaService")
+
+# The library holds restricted material, so managing it is a privileged job.
+# The auth migration backfills pre-existing accounts to admin, so products
+# that upgrade keep exactly the access they had.
+MEDIA_ADMIN_ROLES = ("admin", "staff")
 
 
 # ── Public gallery (themed) ──────────────────────────────────────────────
 @media_bp.route("/media", methods=["GET"])
 def gallery():
-    return render_template("media/gallery.html", items=media_service.list_recent())
+    # Products can disable the public gallery (MEDIA_PUBLIC_GALLERY=false)
+    # when the library holds course material instead of a public showcase.
+    if not current_app.config.get("MEDIA_PUBLIC_GALLERY", True):
+        abort(404)
+    return render_template(
+        "media/gallery.html", items=media_service.list_public_recent()
+    )
+
+
+# ── Protected file serving ───────────────────────────────────────────────
+@media_bp.route("/media/file/<int:item_id>", methods=["GET"])
+def serve_file(item_id):
+    """Serve a media file with access control.
+
+    Restricted files are only sent when the owning feature's registered
+    resolver allows the current user; everything else is 404, never 403,
+    so an unreleased file is indistinguishable from a missing one.
+    """
+    item = media_service.get(item_id)
+    if item is None:
+        abort(404)
+    if item.is_public:
+        # Rebuilt from the filename rather than trusting the stored url, which
+        # is an ordinary column: a written-into url would otherwise make this
+        # unauthenticated endpoint an open redirect.
+        return redirect(f"/static/uploads/{item.filename}")
+    if not resolve_file_access(item, current_user):
+        abort(404)
+    return send_protected_file(
+        media_service.file_path(item),
+        media_service.protected_dir(),
+        mimetype=item.mime_type or "",
+        download_name=item.filename,
+    )
 
 
 # ── Admin media library (back-office) ────────────────────────────────────
 @media_bp.route("/admin/media", methods=["GET"])
-@login_required
+@role_required(*MEDIA_ADMIN_ROLES)
 def admin_index():
-    return render_template("media/admin.html", items=media_service.list_recent())
+    # The back-office manages protected material too, which is why it is
+    # role-gated and why it is the one listing that shows restricted items.
+    return render_template("media/admin.html", items=media_service.list_all_recent())
 
 
 @media_bp.route("/admin/media/upload", methods=["POST"])
-@login_required
+@role_required(*MEDIA_ADMIN_ROLES)
 def admin_upload():
     file = request.files.get("file")
     if file and file.filename:
@@ -35,7 +89,7 @@ def admin_upload():
 
 
 @media_bp.route("/admin/media/<int:item_id>", methods=["GET", "POST"])
-@login_required
+@role_required(*MEDIA_ADMIN_ROLES)
 def admin_detail(item_id):
     item = media_service.get(item_id)
     if item is None:
@@ -55,7 +109,7 @@ def admin_detail(item_id):
 
 
 @media_bp.route("/admin/media/<int:item_id>/crop", methods=["POST"])
-@login_required
+@role_required(*MEDIA_ADMIN_ROLES)
 def admin_crop(item_id):
     item = media_service.get(item_id)
     if item is None:
@@ -77,7 +131,7 @@ def admin_crop(item_id):
 
 
 @media_bp.route("/admin/media/<int:item_id>/delete", methods=["POST"])
-@login_required
+@role_required(*MEDIA_ADMIN_ROLES)
 def admin_delete(item_id):
     media_service.delete_item(item_id)
     flash("Media deleted.", "success")

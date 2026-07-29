@@ -15,7 +15,15 @@ class MediaService(BaseService):
         super().__init__(MediaRepository())
 
     def list_recent(self):
+        """Public items only. See MediaRepository.list_recent."""
         return self.repository.list_recent()
+
+    def list_public_recent(self):
+        return self.repository.list_public_recent()
+
+    def list_all_recent(self):
+        """Every item including restricted ones. Callers must be gated."""
+        return self.repository.list_all_recent()
 
     def get(self, item_id: int):
         """Fetch a single MediaItem by id (or None)."""
@@ -31,8 +39,45 @@ class MediaService(BaseService):
         return item
 
     def _abs_path(self, item) -> str:
-        """Absolute path to the item's file inside static/uploads/."""
-        return os.path.join(current_app.static_folder, "uploads", item.filename)
+        """Absolute path to the item's file (public or restricted storage)."""
+        return os.path.join(self._dir_for(item.access), item.filename)
+
+    def file_path(self, item) -> str:
+        """Public accessor for the item's absolute file path."""
+        return self._abs_path(item)
+
+    def protected_dir(self) -> str:
+        """Public accessor for the restricted storage directory."""
+        return self._protected_dir()
+
+    def _dir_for(self, access: str) -> str:
+        if access == "restricted":
+            return self._protected_dir()
+        return os.path.join(current_app.static_folder, "uploads")
+
+    def _ensure_dir_for(self, access: str) -> str:
+        if access == "restricted":
+            return self._ensure_protected_dir()
+        return self._upload_dir()
+
+    def _protected_dir(self) -> str:
+        """Restricted files live OUTSIDE static/ so the web server never
+        exposes them; only /media/file/<id> can send them, after the owning
+        feature's access resolver allows it.
+
+        Resolve only. Creating it here would let an unmounted volume in
+        production look like an empty directory, turning every protected
+        download into a 404 that reads as "the access control is working".
+        Writers call _ensure_protected_dir instead.
+        """
+        return current_app.config.get("PROTECTED_UPLOADS_DIR") or os.path.join(
+            current_app.instance_path, "protected_uploads"
+        )
+
+    def _ensure_protected_dir(self) -> str:
+        d = self._protected_dir()
+        os.makedirs(d, exist_ok=True)
+        return d
 
     def dimensions(self, item):
         """Return (width, height) in pixels for an image item, else None.
@@ -93,8 +138,10 @@ class MediaService(BaseService):
             if im.mode not in ("RGB", "RGBA"):
                 im = im.convert("RGBA")
 
-        # Collision-safe filename in the product's static/uploads/.
-        upload_dir = self._upload_dir()
+        # Collision-safe filename in the storage the ORIGINAL lives in. A crop
+        # of a restricted item is the same protected content at another size,
+        # so it must never land in static/ as a public file.
+        upload_dir = self._ensure_dir_for(item.access)
         candidate = f"{base}-cropped{out_ext}"
         i = 1
         while os.path.exists(os.path.join(upload_dir, candidate)):
@@ -115,15 +162,21 @@ class MediaService(BaseService):
 
         new_item = MediaItem(
             filename=candidate,
-            url=f"/static/uploads/{candidate}",
+            url=f"/static/uploads/{candidate}" if item.is_public else "",
             source_url=item.source_url or "",
             alt=item.alt or "",
             title=f"{item.title or item.filename} (cropped)",
             mime_type=mime,
             size=os.path.getsize(out_path),
             uploaded_at=datetime.utcnow(),
+            access=item.access,
+            owner_feature=item.owner_feature,
+            owner_ref=item.owner_ref,
         )
         db.session.add(new_item)
+        if not item.is_public:
+            db.session.flush()
+            new_item.url = f"/media/file/{new_item.id}"
         db.session.commit()
         return new_item
 
@@ -132,13 +185,33 @@ class MediaService(BaseService):
         os.makedirs(d, exist_ok=True)
         return d
 
-    def save_upload(self, file_storage, title: str = "", alt: str = ""):
-        """Persist an uploaded file to the product's static/uploads/ and record it."""
+    def save_upload(
+        self,
+        file_storage,
+        title: str = "",
+        alt: str = "",
+        access: str = "public",
+        owner_feature: str = "",
+        owner_ref: str = "",
+    ):
+        """Persist an uploaded file and record it.
+
+        Public files (the default, unchanged behaviour) go to static/uploads/
+        and are served as static assets. Restricted files go to the protected
+        directory and are only reachable through /media/file/<id>, guarded by
+        the owner feature's access resolver.
+        """
         filename = secure_filename(file_storage.filename or "")
         if not filename:
             return None
+        if access not in ("public", "restricted"):
+            return None
+        if access == "restricted" and not owner_feature:
+            # An unclaimed restricted file could never be served (deny by
+            # default), which always means a caller bug. Refuse early.
+            return None
 
-        upload_dir = self._upload_dir()
+        upload_dir = self._ensure_dir_for(access)
         base, ext = os.path.splitext(filename)
         candidate, i = filename, 1
         while os.path.exists(os.path.join(upload_dir, candidate)):
@@ -150,14 +223,22 @@ class MediaService(BaseService):
 
         item = MediaItem(
             filename=candidate,
-            url=f"/static/uploads/{candidate}",
+            url=f"/static/uploads/{candidate}" if access == "public" else "",
             alt=alt,
             title=title or base,
             mime_type=file_storage.mimetype or "",
             size=os.path.getsize(path),
             uploaded_at=datetime.utcnow(),
+            access=access,
+            owner_feature=owner_feature or None,
+            owner_ref=owner_ref or None,
         )
         db.session.add(item)
+        if access == "restricted":
+            # The canonical URL of a restricted file is its serving route,
+            # which needs the id, so flush before building it.
+            db.session.flush()
+            item.url = f"/media/file/{item.id}"
         db.session.commit()
         return item
 
@@ -227,7 +308,7 @@ class MediaService(BaseService):
         if not item:
             return False
         try:
-            path = os.path.join(current_app.static_folder, "uploads", item.filename)
+            path = self._abs_path(item)
             if os.path.isfile(path):
                 os.remove(path)
         except OSError:
