@@ -17,10 +17,23 @@ class MediaItem(db.Model):
     mime_type = db.Column(db.String(128), default="")
     size = db.Column(db.Integer, default=0)
     uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # "public" files live in static/uploads and are served by the web server.
+    # "restricted" files live outside static/ and are only served through
+    # /media/file/<id> after the owning feature's access resolver allows it
+    # (deny by default, see splent_framework.services.file_access).
+    access = db.Column(
+        db.String(16), default="public", server_default="public", nullable=False
+    )
+    owner_feature = db.Column(db.String(64), nullable=True)
+    owner_ref = db.Column(db.String(255), nullable=True)
 
     @property
     def is_image(self):
         return (self.mime_type or "").startswith("image/")
+
+    @property
+    def is_public(self):
+        return self.access == "public"
 
     def __repr__(self):
         return f"MediaItem<{self.id}:{self.filename}>"
