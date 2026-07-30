@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "splent_feature_media"
-version = "0.5.0"
+version = "0.5.1"
 readme = "README.md"
 requires-python = ">=3.13"
 
@@ -28,8 +28,10 @@ cli_version = "1.11.0"
 
 # ── Feature Contract (auto-generated) ────────────────────────────────────────
 # Do not edit manually — re-run `splent feature:contract --write` to refresh.
-# Preserved across refreshes: description, category, tags, env, and
-# requires.features_manual (dependencies invisible to static analysis).
+# Preserved across refreshes: description, category, tags, env,
+# requires.features_manual (dependencies invisible to static analysis)
+# and provides.routes_manual (routes built from configuration at
+# registration time, which have no literal path to find in source).
 [tool.splent.contract]
 description = "Media library to upload and manage files (the WordPress Media Library analogue)"
 archetype = "full"
