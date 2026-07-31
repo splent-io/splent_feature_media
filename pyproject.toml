@@ -59,3 +59,16 @@ templates = ["media/admin.html", "media/admin_detail.html", "media/gallery.html"
 models    = ["MediaItem"]
 hooks     = ["layout.authenticated_sidebar"]
 routes    = false
+
+# ── Configuration ─────────────────────────────────────────────────────────
+[tool.splent.config]
+# Whether uploads are browsable by anyone or only by those who can edit.
+MEDIA_PUBLIC_GALLERY = ""
+# Where files that are not public live. Empty means the framework's default
+# under the product directory. In production this is the mount target of a
+# named volume, so it is set alongside that volume rather than here.
+PROTECTED_UPLOADS_DIR = ""
+# Internal redirect prefix for handing a protected file to nginx instead of
+# streaming it through Python. Empty means stream it, which is correct
+# without a proxy in front.
+PROTECTED_FILES_ACCEL_PREFIX = ""
