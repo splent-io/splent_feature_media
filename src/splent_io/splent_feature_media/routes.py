@@ -8,6 +8,7 @@ from flask import (
     request,
     url_for,
 )
+from flask_babel import gettext as _
 from flask_login import current_user
 
 from splent_io.splent_feature_media import media_bp
@@ -82,9 +83,9 @@ def admin_upload():
         media_service.save_upload(
             file, title=request.form.get("title", ""), alt=request.form.get("alt", "")
         )
-        flash("Media uploaded.", "success")
+        flash(_("Media uploaded."), "success")
     else:
-        flash("No file selected.", "warning")
+        flash(_("No file selected."), "warning")
     return redirect(url_for("media.admin_index"))
 
 
@@ -101,7 +102,7 @@ def admin_detail(item_id):
             alt=request.form.get("alt", ""),
             title=request.form.get("title", ""),
         )
-        flash("Media details saved.", "success")
+        flash(_("Media details saved."), "success")
         return redirect(url_for("media.admin_detail", item_id=item.id))
 
     dimensions = media_service.dimensions(item)
@@ -134,5 +135,5 @@ def admin_crop(item_id):
 @role_required(*MEDIA_ADMIN_ROLES)
 def admin_delete(item_id):
     media_service.delete_item(item_id)
-    flash("Media deleted.", "success")
+    flash(_("Media deleted."), "success")
     return redirect(url_for("media.admin_index"))

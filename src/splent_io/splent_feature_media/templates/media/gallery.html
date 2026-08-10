@@ -1,9 +1,9 @@
 {% extends "public_base.html" %}
 
-{% block title %}Gallery — {{ site.name }}{% endblock %}
+{% block title %}{{ _('Gallery') }} — {{ site.name }}{% endblock %}
 
 {% block hero %}
-    {{ render_block('hero', eyebrow='Media', title='Gallery') }}
+    {{ render_block('hero', eyebrow=_('Media'), title=_('Gallery')) }}
 {% endblock %}
 
 {% block content %}
@@ -14,7 +14,7 @@
             <img src="{{ m.url }}" alt="{{ m.alt }}" loading="lazy">
         </a>
         {% else %}
-        <p class="card__text">No media yet.</p>
+        <p class="card__text">{{ _('No media yet.') }}</p>
         {% endfor %}
     </div>
 </div>

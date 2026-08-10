@@ -2,6 +2,7 @@
 authenticated admin sidebar, pointing at the media library."""
 
 from flask import url_for
+from flask_babel import gettext as _
 
 from splent_framework.hooks.template_hooks import register_template_hook
 
@@ -11,7 +12,7 @@ def media_admin_link():
         '<li class="sidebar-item">'
         f'<a class="sidebar-link" href="{url_for("media.admin_index")}">'
         '<i class="align-middle" data-feather="image"></i> '
-        '<span class="align-middle">Media</span></a>'
+        f'<span class="align-middle">{_("Media")}</span></a>'
         "</li>"
     )
 

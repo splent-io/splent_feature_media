@@ -49,9 +49,9 @@
   <div class="media-picker" data-media-picker>
     <input type="search"
            class="form-control form-control-sm media-picker__search"
-           placeholder="Search media (alt, title, filename)…"
+           placeholder="{{ _('Search media (alt, title, filename)…') }}"
            data-media-picker-search
-           aria-label="Filter media">
+           aria-label="{{ _('Filter media') }}">
 
     <div class="media-picker__grid" data-media-picker-grid>
       {% if allow_none %}
@@ -60,7 +60,7 @@
                {{ 'checked' if (selected is none or (selected | string) == '') else '' }}>
         <span class="media-picker__none">
           <i class="align-middle" data-feather="slash"></i>
-          <span>No image</span>
+          <span>{{ _('No image') }}</span>
         </span>
       </label>
       {% endif %}
@@ -77,10 +77,10 @@
       {% endfor %}
     </div>
 
-    <p class="media-picker__empty d-none" data-media-picker-empty>No media matches your search.</p>
+    <p class="media-picker__empty d-none" data-media-picker-empty>{{ _('No media matches your search.') }}</p>
 
     {% if not items %}
-    <div class="form-text">No images in the media library yet.</div>
+    <div class="form-text">{{ _('No images in the media library yet.') }}</div>
     {% endif %}
   </div>
 
