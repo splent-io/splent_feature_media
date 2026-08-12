@@ -61,9 +61,7 @@ def test_repeated_import_returns_existing_row_and_file(
         assert again.filename == first.filename
         assert set(os.listdir(uploads)) == files_after_first
         assert (
-            MediaItem.query.filter_by(
-                source_url="seed://tests/idempotent.png"
-            ).count()
+            MediaItem.query.filter_by(source_url="seed://tests/idempotent.png").count()
             == 1
         )
 
