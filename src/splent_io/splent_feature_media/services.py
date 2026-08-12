@@ -1,4 +1,6 @@
+import mimetypes
 import os
+import shutil
 from datetime import datetime
 
 from flask import current_app
@@ -142,11 +144,7 @@ class MediaService(BaseService):
         # of a restricted item is the same protected content at another size,
         # so it must never land in static/ as a public file.
         upload_dir = self._ensure_dir_for(item.access)
-        candidate = f"{base}-cropped{out_ext}"
-        i = 1
-        while os.path.exists(os.path.join(upload_dir, candidate)):
-            i += 1
-            candidate = f"{base}-cropped-{i}{out_ext}"
+        candidate = self._collision_safe_name(upload_dir, f"{base}-cropped{out_ext}")
 
         out_path = os.path.join(upload_dir, candidate)
         try:
@@ -185,6 +183,15 @@ class MediaService(BaseService):
         os.makedirs(d, exist_ok=True)
         return d
 
+    def _collision_safe_name(self, upload_dir: str, filename: str) -> str:
+        """Return filename, counter-suffixed if it already exists in the dir."""
+        base, ext = os.path.splitext(filename)
+        candidate, i = filename, 1
+        while os.path.exists(os.path.join(upload_dir, candidate)):
+            i += 1
+            candidate = f"{base}-{i}{ext}"
+        return candidate
+
     def save_upload(
         self,
         file_storage,
@@ -212,11 +219,8 @@ class MediaService(BaseService):
             return None
 
         upload_dir = self._ensure_dir_for(access)
-        base, ext = os.path.splitext(filename)
-        candidate, i = filename, 1
-        while os.path.exists(os.path.join(upload_dir, candidate)):
-            i += 1
-            candidate = f"{base}-{i}{ext}"
+        base = os.path.splitext(filename)[0]
+        candidate = self._collision_safe_name(upload_dir, filename)
 
         path = os.path.join(upload_dir, candidate)
         file_storage.save(path)
@@ -279,11 +283,8 @@ class MediaService(BaseService):
             filename = f"{filename or 'image'}{ext}"
 
         upload_dir = self._upload_dir()
-        base, ext = os.path.splitext(filename)
-        candidate, i = filename, 1
-        while os.path.exists(os.path.join(upload_dir, candidate)):
-            i += 1
-            candidate = f"{base}-{i}{ext}"
+        base = os.path.splitext(filename)[0]
+        candidate = self._collision_safe_name(upload_dir, filename)
 
         path = os.path.join(upload_dir, candidate)
         with open(path, "wb") as f:
@@ -297,6 +298,45 @@ class MediaService(BaseService):
             title=title or base,
             mime_type=content_type or "image/jpeg",
             size=len(resp.content),
+            uploaded_at=datetime.utcnow(),
+        )
+        db.session.add(item)
+        db.session.commit()
+        return item
+
+    def import_from_file(self, path, *, title="", alt="", source_key=None):
+        """Copy a local file into the media library and record it.
+
+        The seed-time sibling of ``import_from_url``: seeders bundle images
+        inside their feature package and register them here to obtain a public
+        URL. Idempotent by ``source_url`` (the caller's ``source_key``, or the
+        absolute source path), so re-running a seeder returns the existing item
+        instead of duplicating the file.
+        """
+        if not os.path.isfile(path):
+            raise FileNotFoundError(f"Media import source does not exist: {path}")
+
+        source_url = source_key or "file://" + os.path.abspath(path)
+        existing = MediaItem.query.filter_by(source_url=source_url).first()
+        if existing:
+            return existing
+
+        filename = secure_filename(os.path.basename(path)) or "file"
+        upload_dir = self._upload_dir()
+        base = os.path.splitext(filename)[0]
+        candidate = self._collision_safe_name(upload_dir, filename)
+
+        dest = os.path.join(upload_dir, candidate)
+        shutil.copyfile(path, dest)
+
+        item = MediaItem(
+            filename=candidate,
+            url=f"/static/uploads/{candidate}",
+            source_url=source_url,
+            alt=alt,
+            title=title or base.replace("-", " ").replace("_", " ").strip(),
+            mime_type=mimetypes.guess_type(candidate)[0] or "",
+            size=os.path.getsize(dest),
             uploaded_at=datetime.utcnow(),
         )
         db.session.add(item)
