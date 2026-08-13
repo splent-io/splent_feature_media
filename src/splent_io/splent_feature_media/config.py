@@ -20,7 +20,8 @@ def inject_config(app):
         {
             # Public gallery page at /media. Products whose library holds
             # course material rather than a public showcase set this to false
-            # so anonymous visitors cannot enumerate the whole library.
+            # so anonymous visitors cannot enumerate the whole library. Also
+            # admin-editable in the settings panel, which wins at request time.
             "MEDIA_PUBLIC_GALLERY": gallery.strip().lower() not in ("0", "false", "no"),
             # Main-nav label for the public gallery. Empty keeps the gallery
             # out of the nav; a label ("Photos", "Fotos") adds the entry.

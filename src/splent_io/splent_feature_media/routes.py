@@ -1,6 +1,5 @@
 from flask import (
     abort,
-    current_app,
     flash,
     jsonify,
     redirect,
@@ -18,6 +17,7 @@ from splent_framework.services.file_access import (
     send_protected_file,
 )
 from splent_framework.services.service_locator import service_proxy
+from splent_framework.settings.settings_schema import get_config
 
 media_service = service_proxy("MediaService")
 
@@ -30,9 +30,10 @@ MEDIA_ADMIN_ROLES = ("admin", "staff")
 # ── Public gallery (themed) ──────────────────────────────────────────────
 @media_bp.route("/media", methods=["GET"])
 def gallery():
-    # Products can disable the public gallery (MEDIA_PUBLIC_GALLERY=false)
-    # when the library holds course material instead of a public showcase.
-    if not current_app.config.get("MEDIA_PUBLIC_GALLERY", True):
+    # Products can disable the public gallery when the library holds course
+    # material instead of a public showcase. Read at request time through the
+    # declarative settings (panel value first, MEDIA_PUBLIC_GALLERY second).
+    if not get_config("media").get("public_gallery", True):
         abort(404)
     return render_template(
         "media/gallery.html", items=media_service.list_public_recent()

@@ -201,3 +201,28 @@ def test_gallery_can_be_disabled_per_product(test_client, test_app):
         assert test_client.get("/media").status_code == 404
     finally:
         test_app.config["MEDIA_PUBLIC_GALLERY"] = original
+
+
+def test_gallery_panel_setting_wins_over_config(test_client, test_app):
+    """A stored panel value beats the environment at request time.
+
+    The gallery route reads get_config("media"), so an admin flipping the
+    switch takes a public page down without a restart. Skipped when the
+    product under test does not install the settings feature.
+    """
+    try:
+        from splent_io.splent_feature_settings.models import Setting
+    except ImportError:
+        pytest.skip("settings feature not installed in the product under test")
+
+    from splent_framework.db import db
+
+    original = test_app.config.get("MEDIA_PUBLIC_GALLERY", True)
+    test_app.config["MEDIA_PUBLIC_GALLERY"] = True
+    try:
+        with test_app.app_context():
+            db.session.add(Setting(key="media_public_gallery", value="0"))
+            db.session.commit()
+        assert test_client.get("/media").status_code == 404
+    finally:
+        test_app.config["MEDIA_PUBLIC_GALLERY"] = original
