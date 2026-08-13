@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "splent_feature_media"
-version = "0.7.0"
+version = "0.8.0"
 readme = "README.md"
 requires-python = ">=3.13"
 
@@ -48,7 +48,7 @@ translations = ["es"]
 docker     = []
 
 [tool.splent.contract.requires]
-features = ["auth"]
+features = ["auth", "settings"]
 features_manual = ["auth"]
 env_vars = ["MEDIA_NAV_LABEL", "MEDIA_PUBLIC_GALLERY", "PROTECTED_FILES_ACCEL_PREFIX", "PROTECTED_UPLOADS_DIR"]
 signals  = []
