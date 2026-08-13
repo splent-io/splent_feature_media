@@ -22,6 +22,9 @@ def inject_config(app):
             # course material rather than a public showcase set this to false
             # so anonymous visitors cannot enumerate the whole library.
             "MEDIA_PUBLIC_GALLERY": gallery.strip().lower() not in ("0", "false", "no"),
+            # Main-nav label for the public gallery. Empty keeps the gallery
+            # out of the nav; a label ("Photos", "Fotos") adds the entry.
+            "MEDIA_NAV_LABEL": os.getenv("MEDIA_NAV_LABEL", "").strip(),
             # Where restricted files live, OUTSIDE static/. Empty means
             # <instance_path>/protected_uploads. In production this path must
             # be a persistent volume.

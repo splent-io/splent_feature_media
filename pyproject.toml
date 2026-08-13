@@ -64,6 +64,8 @@ routes    = false
 [tool.splent.config]
 # Whether uploads are browsable by anyone or only by those who can edit.
 MEDIA_PUBLIC_GALLERY = ""
+# Main-nav label for the gallery page. Empty keeps it out of the nav.
+MEDIA_NAV_LABEL = ""
 # Where files that are not public live. Empty means the framework's default
 # under the product directory. In production this is the mount target of a
 # named volume, so it is set alongside that volume rather than here.
