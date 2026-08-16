@@ -35,5 +35,23 @@ def inject_config(app):
             # location must be declared internal or the whole protected
             # directory becomes reachable.
             "PROTECTED_FILES_ACCEL_PREFIX": accel_prefix,
+            # Latest public photos on the homepage; 0 (the default) shows
+            # none. Also admin-editable in the settings panel, which wins.
+            "MEDIA_HOME_COUNT": _int_env("MEDIA_HOME_COUNT", 0),
+            # Public gallery behaviour; all admin-editable in the panel,
+            # which wins over these environment values.
+            "MEDIA_GALLERY_VIEW": os.getenv("MEDIA_GALLERY_VIEW", "grid").strip() or "grid",
+            "MEDIA_GALLERY_PAGE_SIZE": _int_env("MEDIA_GALLERY_PAGE_SIZE", 48),
+            "MEDIA_SLIDESHOW_SECONDS": _int_env("MEDIA_SLIDESHOW_SECONDS", 4),
+            "MEDIA_UPLOAD_IN_GALLERY": os.getenv("MEDIA_UPLOAD_IN_GALLERY", "").strip().lower()
+            not in ("0", "false", "no"),
         }
     )
+
+
+def _int_env(name, default):
+    raw = os.getenv(name, "").strip()
+    try:
+        return int(raw) if raw else default
+    except ValueError:
+        return default

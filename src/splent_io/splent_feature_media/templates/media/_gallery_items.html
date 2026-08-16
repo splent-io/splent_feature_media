@@ -1,0 +1,9 @@
+{# One batch of gallery items. Rendered inside the grid on the first page
+   and returned bare by /media/page/<n> for infinite scroll. Each thumbnail
+   links to the full-size file: the theme's lightbox opens it large with
+   previous/next and slideshow; without JavaScript the link shows the picture. #}
+{% for m in items if m.is_image %}
+<a class="gallery-grid__item" href="{{ m.url }}">
+    <img src="{{ m.thumbnail_url }}" alt="{{ m.alt or m.title }}" loading="lazy" decoding="async">
+</a>
+{% endfor %}

@@ -3,19 +3,35 @@
 {% block title %}{{ _('Gallery') }} — {{ site.name }}{% endblock %}
 
 {% block hero %}
-    {{ render_block('hero', eyebrow=_('Media'), title=_('Gallery')) }}
+    {{ render_block('hero', eyebrow=_('Media'), title=_('Gallery'),
+                    subtitle=ngettext('%(num)d photo', '%(num)d photos', total)) }}
 {% endblock %}
 
 {% block content %}
 <div class="container section">
-    <div class="gallery-grid">
-        {% for m in items if m.is_image %}
-        <a class="gallery-grid__item" href="{{ m.url }}" target="_blank" rel="noopener">
-            <img src="{{ m.url }}" alt="{{ m.alt }}" loading="lazy">
-        </a>
-        {% else %}
-        <p class="card__text">{{ _('No media yet.') }}</p>
-        {% endfor %}
+    {% if items %}
+    <div class="gallery-toolbar" role="toolbar" aria-label="{{ _('Gallery view') }}">
+        <button type="button" class="gallery-toolbar__btn{{ ' is-active' if gallery.view == 'grid' else '' }}" data-gallery-view="grid" aria-pressed="{{ 'true' if gallery.view == 'grid' else 'false' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            {{ _('Grid') }}
+        </button>
+        <button type="button" class="gallery-toolbar__btn{{ ' is-active' if gallery.view == 'mosaic' else '' }}" data-gallery-view="mosaic" aria-pressed="{{ 'true' if gallery.view == 'mosaic' else 'false' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="11"/><rect x="13" y="3" width="8" height="6"/><rect x="13" y="11" width="8" height="10"/><rect x="3" y="16" width="8" height="5"/></svg>
+            {{ _('Mosaic') }}
+        </button>
+        <button type="button" class="gallery-toolbar__btn" data-gallery-slideshow>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            {{ _('Slideshow') }}
+        </button>
     </div>
+    <div class="gallery-grid{{ ' gallery-grid--mosaic' if gallery.view == 'mosaic' else '' }}" data-lightbox-gallery data-slideshow-ms="{{ gallery.slideshow_ms }}" data-gallery-next="{{ url_for('media.gallery_page', page=2) if has_more else '' }}">
+        {% include "media/_gallery_items.html" %}
+    </div>
+    <p class="gallery-more" data-gallery-sentinel {% if not has_more %}hidden{% endif %}>
+        <a class="btn btn-ghost" href="{{ url_for('media.gallery_page', page=2) if has_more else '#' }}" data-gallery-more>{{ _('Load more') }}</a>
+    </p>
+    {% else %}
+    <p class="card__text">{{ _('No media yet.') }}</p>
+    {% endif %}
 </div>
 {% endblock %}

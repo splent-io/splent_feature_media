@@ -2,6 +2,7 @@ from flask import (
     abort,
     flash,
     jsonify,
+    make_response,
     redirect,
     render_template,
     request,
@@ -28,16 +29,65 @@ MEDIA_ADMIN_ROLES = ("admin", "staff")
 
 
 # ── Public gallery (themed) ──────────────────────────────────────────────
+def _gallery_cfg():
+    """The gallery's admin-editable behaviour (panel, then env, then
+    defaults), sanitised so a stray value never breaks the page."""
+    cfg = get_config("media")
+    try:
+        page_size = int(cfg.get("gallery_page_size", 48) or 48)
+    except (TypeError, ValueError):
+        page_size = 48
+    try:
+        seconds = int(cfg.get("slideshow_seconds", 4) or 4)
+    except (TypeError, ValueError):
+        seconds = 4
+    view = cfg.get("gallery_view", "grid")
+    return {
+        "public": bool(cfg.get("public_gallery", True)),
+        "page_size": max(6, min(page_size, 200)),
+        "slideshow_ms": max(1, min(seconds, 60)) * 1000,
+        "view": view if view in ("grid", "mosaic") else "grid",
+        "upload_in_gallery": bool(cfg.get("upload_in_gallery", True)),
+    }
+
+
 @media_bp.route("/media", methods=["GET"])
 def gallery():
     # Products can disable the public gallery when the library holds course
     # material instead of a public showcase. Read at request time through the
     # declarative settings (panel value first, MEDIA_PUBLIC_GALLERY second).
-    if not get_config("media").get("public_gallery", True):
+    cfg = _gallery_cfg()
+    if not cfg["public"]:
         abort(404)
+    items, has_more = media_service.gallery_page(1, cfg["page_size"])
     return render_template(
-        "media/gallery.html", items=media_service.list_public_recent()
+        "media/gallery.html",
+        items=items,
+        has_more=has_more,
+        total=media_service.count_gallery(),
+        page=1,
+        gallery=cfg,
     )
+
+
+@media_bp.route("/media/page/<int:page>", methods=["GET"])
+def gallery_page(page):
+    """One more page of the gallery as an HTML fragment (infinite scroll).
+
+    Same items markup as the first page, so the lightbox and the grid treat
+    appended photos exactly like the initial ones. The response carries the
+    next page number in the X-Next-Page header (empty when there is none).
+    """
+    cfg = _gallery_cfg()
+    if not cfg["public"]:
+        abort(404)
+    items, has_more = media_service.gallery_page(page, cfg["page_size"])
+    if not items:
+        abort(404)
+    html = render_template("media/_gallery_items.html", items=items)
+    resp = make_response(html)
+    resp.headers["X-Next-Page"] = str(page + 1) if has_more else ""
+    return resp
 
 
 # ── Protected file serving ───────────────────────────────────────────────
@@ -73,7 +123,11 @@ def serve_file(item_id):
 def admin_index():
     # The back-office manages protected material too, which is why it is
     # role-gated and why it is the one listing that shows restricted items.
-    return render_template("media/admin.html", items=media_service.list_all_recent())
+    return render_template(
+        "media/admin.html",
+        items=media_service.list_all_recent(),
+        upload_in_gallery=_gallery_cfg()["upload_in_gallery"],
+    )
 
 
 @media_bp.route("/admin/media/upload", methods=["POST"])
@@ -82,7 +136,10 @@ def admin_upload():
     file = request.files.get("file")
     if file and file.filename:
         media_service.save_upload(
-            file, title=request.form.get("title", ""), alt=request.form.get("alt", "")
+            file,
+            title=request.form.get("title", ""),
+            alt=request.form.get("alt", ""),
+            in_gallery=bool(request.form.get("in_gallery")),
         )
         flash(_("Media uploaded."), "success")
     else:
@@ -102,6 +159,7 @@ def admin_detail(item_id):
             item,
             alt=request.form.get("alt", ""),
             title=request.form.get("title", ""),
+            in_gallery=bool(request.form.get("in_gallery")),
         )
         flash(_("Media details saved."), "success")
         return redirect(url_for("media.admin_detail", item_id=item.id))
@@ -130,6 +188,21 @@ def admin_crop(item_id):
         return jsonify(error="Could not crop this image."), 400
 
     return jsonify(url=url_for("media.admin_detail", item_id=new_item.id))
+
+
+@media_bp.route("/admin/media/<int:item_id>/gallery", methods=["POST"])
+@role_required(*MEDIA_ADMIN_ROLES)
+def admin_toggle_gallery(item_id):
+    """Put one item in the public gallery or take it out (list-view switch)."""
+    item = media_service.get(item_id)
+    if item is None:
+        abort(404)
+    media_service.set_in_gallery(item, not item.in_gallery)
+    flash(
+        _("Shown in the public gallery.") if item.in_gallery else _("Hidden from the public gallery."),
+        "success",
+    )
+    return redirect(request.referrer or url_for("media.admin_index"))
 
 
 @media_bp.route("/admin/media/<int:item_id>/delete", methods=["POST"])

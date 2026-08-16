@@ -71,7 +71,7 @@
              data-media-haystack="{{ (m.alt ~ ' ' ~ m.title ~ ' ' ~ m.filename) | lower }}">
         <input type="radio" name="{{ field_name }}" value="{{ opt_value }}"
                {{ 'checked' if (selected | string) == (opt_value | string) else '' }}>
-        <img src="{{ m.url }}" alt="{{ m.alt or m.title or m.filename }}"
+        <img src="{{ m.thumbnail_url }}" loading="lazy" alt="{{ m.alt or m.title or m.filename }}"
              title="{{ m.title or m.filename }}">
       </label>
       {% endfor %}

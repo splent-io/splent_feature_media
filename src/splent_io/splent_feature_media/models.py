@@ -11,6 +11,11 @@ class MediaItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     filename = db.Column(db.String(512), nullable=False)
     url = db.Column(db.String(512), nullable=False)  # /static/uploads/<filename>
+    # A small web-sized copy under /static/uploads/thumbs/, used in grids so a
+    # gallery never downloads full-resolution originals as thumbnails. Empty
+    # for non-images and for items whose thumbnail has not been generated yet
+    # (thumbnail_url then falls back to the original).
+    thumbnail = db.Column(db.String(512), default="")
     source_url = db.Column(db.String(1024), default="")  # original URL when imported
     alt = db.Column(db.String(255), default="")
     title = db.Column(db.String(255), default="")
@@ -26,6 +31,15 @@ class MediaItem(db.Model):
     )
     owner_feature = db.Column(db.String(64), nullable=True)
     owner_ref = db.Column(db.String(255), nullable=True)
+    # Whether the item belongs in the public gallery (/media and the
+    # homepage strip). The library holds every file a site needs, logos and
+    # posters and portraits included; the gallery is the curated subset an
+    # editor wants visitors to browse. Files bundled by features (seeds) and
+    # imported illustrations start outside it; uploads and photo imports
+    # start inside it, and the admin toggles any item either way.
+    in_gallery = db.Column(
+        db.Boolean, default=True, server_default="1", nullable=False, index=True
+    )
 
     @property
     def is_image(self):
@@ -34,6 +48,15 @@ class MediaItem(db.Model):
     @property
     def is_public(self):
         return self.access == "public"
+
+    @property
+    def thumbnail_url(self):
+        """A grid-sized image: the generated thumbnail when present, else the
+        original. Callers use this for <img src> in galleries and keep `url`
+        for the full-size lightbox."""
+        if self.thumbnail and self.is_public:
+            return f"/static/uploads/thumbs/{self.thumbnail}"
+        return self.url
 
     def __repr__(self):
         return f"MediaItem<{self.id}:{self.filename}>"

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-08-10 15:13+0000\n"
+"POT-Creation-Date: 2026-08-16 16:20+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,26 +17,34 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.18.0\n"
 
-#: src/splent_io/splent_feature_media/hooks.py:15
+#: src/splent_io/splent_feature_media/hooks.py:23
 #: src/splent_io/splent_feature_media/templates/media/admin_detail.html:3
 #: src/splent_io/splent_feature_media/templates/media/gallery.html:6
 #: src/splent_io/splent_feature_media/templates/media/index.html:3
 msgid "Media"
 msgstr ""
 
-#: src/splent_io/splent_feature_media/routes.py:86
+#: src/splent_io/splent_feature_media/routes.py:144
 msgid "Media uploaded."
 msgstr ""
 
-#: src/splent_io/splent_feature_media/routes.py:88
+#: src/splent_io/splent_feature_media/routes.py:146
 msgid "No file selected."
 msgstr ""
 
-#: src/splent_io/splent_feature_media/routes.py:105
+#: src/splent_io/splent_feature_media/routes.py:164
 msgid "Media details saved."
 msgstr ""
 
-#: src/splent_io/splent_feature_media/routes.py:138
+#: src/splent_io/splent_feature_media/routes.py:202
+msgid "Shown in the public gallery."
+msgstr ""
+
+#: src/splent_io/splent_feature_media/routes.py:202
+msgid "Hidden from the public gallery."
+msgstr ""
+
+#: src/splent_io/splent_feature_media/routes.py:212
 msgid "Media deleted."
 msgstr ""
 
@@ -73,23 +81,36 @@ msgstr ""
 msgid "Title (optional)"
 msgstr ""
 
-#: src/splent_io/splent_feature_media/templates/media/admin.html:14
+#: src/splent_io/splent_feature_media/templates/media/admin.html:16
+#: src/splent_io/splent_feature_media/templates/media/admin_detail.html:114
+msgid "Show in the public gallery"
+msgstr ""
+
+#: src/splent_io/splent_feature_media/templates/media/admin.html:18
 msgid "Upload"
 msgstr ""
 
-#: src/splent_io/splent_feature_media/templates/media/admin.html:22
+#: src/splent_io/splent_feature_media/templates/media/admin.html:26
 msgid "Edit details"
 msgstr ""
 
-#: src/splent_io/splent_feature_media/templates/media/admin.html:35
+#: src/splent_io/splent_feature_media/templates/media/admin.html:42
+msgid "Shown in the public gallery. Click to hide."
+msgstr ""
+
+#: src/splent_io/splent_feature_media/templates/media/admin.html:42
+msgid "Hidden from the public gallery. Click to show."
+msgstr ""
+
+#: src/splent_io/splent_feature_media/templates/media/admin.html:45
 msgid "Delete this file?"
 msgstr ""
 
-#: src/splent_io/splent_feature_media/templates/media/admin.html:37
+#: src/splent_io/splent_feature_media/templates/media/admin.html:47
 msgid "Delete"
 msgstr ""
 
-#: src/splent_io/splent_feature_media/templates/media/admin.html:44
+#: src/splent_io/splent_feature_media/templates/media/admin.html:54
 msgid "No media yet. Upload something above."
 msgstr ""
 
@@ -185,28 +206,66 @@ msgstr ""
 msgid "Describe the image for accessibility"
 msgstr ""
 
-#: src/splent_io/splent_feature_media/templates/media/admin_detail.html:113
+#: src/splent_io/splent_feature_media/templates/media/admin_detail.html:115
+msgid ""
+"The library keeps every file; the gallery is what visitors browse. Logos,"
+" posters and portraits usually stay out."
+msgstr ""
+
+#: src/splent_io/splent_feature_media/templates/media/admin_detail.html:120
 msgid "Save details"
 msgstr ""
 
-#: src/splent_io/splent_feature_media/templates/media/admin_detail.html:119
+#: src/splent_io/splent_feature_media/templates/media/admin_detail.html:126
 msgid "Delete this file permanently?"
 msgstr ""
 
-#: src/splent_io/splent_feature_media/templates/media/admin_detail.html:121
+#: src/splent_io/splent_feature_media/templates/media/admin_detail.html:128
 msgid "Delete media"
 msgstr ""
 
-#: src/splent_io/splent_feature_media/templates/media/admin_detail.html:209
+#: src/splent_io/splent_feature_media/templates/media/admin_detail.html:216
 msgid "Could not save the cropped image."
 msgstr ""
 
 #: src/splent_io/splent_feature_media/templates/media/gallery.html:3
 #: src/splent_io/splent_feature_media/templates/media/gallery.html:6
+#: src/splent_io/splent_feature_media/templates/media/hooks/home_section.html:5
 msgid "Gallery"
 msgstr ""
 
-#: src/splent_io/splent_feature_media/templates/media/gallery.html:17
+#: src/splent_io/splent_feature_media/templates/media/gallery.html:7
+#, python-format
+msgid "%(num)d photo"
+msgid_plural "%(num)d photos"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/splent_io/splent_feature_media/templates/media/gallery.html:13
+msgid "Gallery view"
+msgstr ""
+
+#: src/splent_io/splent_feature_media/templates/media/gallery.html:16
+msgid "Grid"
+msgstr ""
+
+#: src/splent_io/splent_feature_media/templates/media/gallery.html:20
+msgid "Mosaic"
+msgstr ""
+
+#: src/splent_io/splent_feature_media/templates/media/gallery.html:24
+msgid "Slideshow"
+msgstr ""
+
+#: src/splent_io/splent_feature_media/templates/media/gallery.html:31
+msgid "Load more"
+msgstr ""
+
+#: src/splent_io/splent_feature_media/templates/media/gallery.html:34
 msgid "No media yet."
+msgstr ""
+
+#: src/splent_io/splent_feature_media/templates/media/hooks/home_section.html:14
+msgid "See all photos"
 msgstr ""
 

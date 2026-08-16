@@ -26,6 +26,42 @@ def init_feature(app):
                 "label": "Public gallery",
                 "help": "The gallery page at /media, browsable by anyone. Off answers 404 so visitors cannot enumerate the library.",
             },
+            {
+                "key": "home_count",
+                "type": "int",
+                "default": "0",
+                "label": "Photos on the homepage",
+                "help": "How many of the latest public photos the homepage shows. Zero hides the section.",
+            },
+            {
+                "key": "gallery_view",
+                "type": "select",
+                "default": "grid",
+                "options": [("grid", "Grid (uniform tiles)"), ("mosaic", "Mosaic (natural proportions)")],
+                "label": "Default gallery view",
+                "help": "How the gallery opens; visitors can switch and their choice is remembered in their browser.",
+            },
+            {
+                "key": "gallery_page_size",
+                "type": "int",
+                "default": "48",
+                "label": "Photos per scroll page",
+                "help": "How many photos load at once as the visitor scrolls the gallery.",
+            },
+            {
+                "key": "slideshow_seconds",
+                "type": "int",
+                "default": "4",
+                "label": "Slideshow interval (seconds)",
+                "help": "Seconds each photo stays on screen in the slideshow.",
+            },
+            {
+                "key": "upload_in_gallery",
+                "type": "bool",
+                "default": "1",
+                "label": "New uploads go to the gallery",
+                "help": "Whether the upload form ticks 'Show in the public gallery' by default. Each file can still be toggled.",
+            },
         ],
         icon="folder",
     )
@@ -37,6 +73,12 @@ def init_feature(app):
     label = app.config.get("MEDIA_NAV_LABEL", "")
     if label and app.config.get("MEDIA_PUBLIC_GALLERY", True):
         register_nav_item(key="media", label=label, href="/media", order=45)
+    # Public gallery chrome: the view toolbar and mosaic layout, and the
+    # infinite scroll + slideshow driver (which talks to the theme lightbox).
+    from splent_framework.assets.asset_registry import register_asset
+
+    register_asset("css", "media.assets", order=100, subfolder="css", filename="gallery.css")
+    register_asset("js", "media.assets", order=100, subfolder="js", filename="gallery.js")
 
 
 def inject_context_vars(app):

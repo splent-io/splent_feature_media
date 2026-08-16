@@ -11,6 +11,10 @@
     <div class="d-flex flex-wrap gap-2 align-items-center">
         <input type="file" name="file" class="form-control" style="max-width:340px" required>
         <input type="text" name="title" class="form-control" style="max-width:240px" placeholder="{{ _('Title (optional)') }}">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="in_gallery" id="upload-in-gallery" {{ 'checked' if upload_in_gallery else '' }}>
+            <label class="form-check-label" for="upload-in-gallery">{{ _('Show in the public gallery') }}</label>
+        </div>
         <button class="btn btn-primary" type="submit">{{ _('Upload') }}</button>
     </div>
 </form>
@@ -21,7 +25,7 @@
         <div class="card h-100">
             <a href="{{ url_for('media.admin_detail', item_id=m.id) }}" class="text-decoration-none text-reset" title="{{ _('Edit details') }}">
             {% if m.is_image %}
-            <img src="{{ m.url }}" class="card-img-top" style="height:140px;object-fit:cover" alt="{{ m.alt }}">
+            <img src="{{ m.thumbnail_url }}" loading="lazy" class="card-img-top" style="height:140px;object-fit:cover" alt="{{ m.alt }}">
             {% else %}
             <div class="card-img-top d-flex align-items-center justify-content-center bg-light" style="height:140px"><svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg></div>
             {% endif %}
@@ -30,8 +34,14 @@
                 <a href="{{ url_for('media.admin_detail', item_id=m.id) }}" class="text-decoration-none text-reset">
                 <p class="small text-truncate mb-1" title="{{ m.title or m.filename }}">{{ m.title or m.filename }}</p>
                 </a>
-                <div class="d-flex justify-content-between align-items-center">
-                    <code class="small text-muted text-truncate" style="max-width:120px">{{ m.url }}</code>
+                <div class="d-flex justify-content-between align-items-center gap-1">
+                    <code class="small text-muted text-truncate" style="max-width:96px">{{ m.url }}</code>
+                    {% if m.is_image and m.is_public %}
+                    <form method="POST" action="{{ url_for('media.admin_toggle_gallery', item_id=m.id) }}" class="ms-auto">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm py-0 px-1 {{ 'btn-success' if m.in_gallery else 'btn-outline-secondary' }}" type="submit" title="{{ _('Shown in the public gallery. Click to hide.') if m.in_gallery else _('Hidden from the public gallery. Click to show.') }}" aria-pressed="{{ 'true' if m.in_gallery else 'false' }}"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{% if m.in_gallery %}<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>{% else %}<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>{% endif %}</svg></button>
+                    </form>
+                    {% endif %}
                     <form method="POST" action="{{ url_for('media.admin_delete', item_id=m.id) }}" onsubmit="return confirm('{{ _('Delete this file?') }}')">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button class="btn btn-sm btn-outline-danger py-0 px-1" type="submit" title="{{ _('Delete') }}"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>

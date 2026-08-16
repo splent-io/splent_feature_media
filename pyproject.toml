@@ -37,27 +37,27 @@ description = "Media library to upload and manage files (the WordPress Media Lib
 archetype = "full"
 
 [tool.splent.contract.provides]
-routes     = ["/admin/media", "/admin/media/<int:item_id>", "/admin/media/<int:item_id>/crop", "/admin/media/<int:item_id>/delete", "/admin/media/upload", "/media", "/media/file/<int:item_id>"]
+routes     = ["/admin/media", "/admin/media/<int:item_id>", "/admin/media/<int:item_id>/crop", "/admin/media/<int:item_id>/delete", "/admin/media/<int:item_id>/gallery", "/admin/media/upload", "/media", "/media/file/<int:item_id>", "/media/page/<int:page>"]
 blueprints = []
 models     = ["MediaItem"]
 commands   = ["hello"]
-hooks      = ["layout.authenticated_sidebar"]
+hooks      = ["home.section", "layout.authenticated_sidebar"]
 services   = ["MediaService"]
 signals    = []
-translations = ["es"]
+translations = ["en", "es"]
 docker     = []
 
 [tool.splent.contract.requires]
 features = ["auth", "settings"]
 features_manual = ["auth"]
-env_vars = ["MEDIA_NAV_LABEL", "MEDIA_PUBLIC_GALLERY", "PROTECTED_FILES_ACCEL_PREFIX", "PROTECTED_UPLOADS_DIR"]
+env_vars = ["MEDIA_GALLERY_VIEW", "MEDIA_NAV_LABEL", "MEDIA_PUBLIC_GALLERY", "MEDIA_UPLOAD_IN_GALLERY", "PROTECTED_FILES_ACCEL_PREFIX", "PROTECTED_UPLOADS_DIR"]
 signals  = []
 
 [tool.splent.contract.extensible]
 services  = ["MediaService"]
-templates = ["media/admin.html", "media/admin_detail.html", "media/gallery.html", "media/index.html"]
+templates = ["media/admin.html", "media/admin_detail.html", "media/gallery.html", "media/hooks/home_section.html", "media/index.html"]
 models    = ["MediaItem"]
-hooks     = ["layout.authenticated_sidebar"]
+hooks     = ["home.section", "layout.authenticated_sidebar"]
 routes    = false
 
 # ── Configuration ─────────────────────────────────────────────────────────
@@ -66,6 +66,16 @@ routes    = false
 MEDIA_PUBLIC_GALLERY = ""
 # Main-nav label for the gallery page. Empty keeps it out of the nav.
 MEDIA_NAV_LABEL = ""
+# Latest public photos shown on the homepage. Zero shows none. Also
+# admin-editable in the settings panel, which wins.
+MEDIA_HOME_COUNT = 0
+# Public gallery: default view (grid|mosaic), photos per scroll page,
+# seconds per photo in the slideshow, and whether the upload form ticks
+# "show in the public gallery" by default. All admin-editable, panel wins.
+MEDIA_GALLERY_VIEW = "grid"
+MEDIA_GALLERY_PAGE_SIZE = 48
+MEDIA_SLIDESHOW_SECONDS = 4
+MEDIA_UPLOAD_IN_GALLERY = true
 # Where files that are not public live. Empty means the framework's default
 # under the product directory. In production this is the mount target of a
 # named volume, so it is set alongside that volume rather than here.

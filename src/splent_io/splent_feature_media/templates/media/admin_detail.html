@@ -103,11 +103,18 @@
                         <label class="form-label" for="media-title">{{ _('Title') }}</label>
                         <input id="media-title" name="title" class="form-control" value="{{ item.title or '' }}">
                     </div>
-                    <div class="mb-0">
+                    <div class="mb-3">
                         <label class="form-label" for="media-alt">{{ _('Alt text') }}</label>
                         <input id="media-alt" name="alt" class="form-control" value="{{ item.alt or '' }}"
                                placeholder="{{ _('Describe the image for accessibility') }}">
                     </div>
+                    {% if item.is_image and item.is_public %}
+                    <div class="form-check mb-0">
+                        <input class="form-check-input" type="checkbox" name="in_gallery" id="media-in-gallery" {{ 'checked' if item.in_gallery else '' }}>
+                        <label class="form-check-label" for="media-in-gallery">{{ _('Show in the public gallery') }}</label>
+                        <div class="form-text">{{ _('The library keeps every file; the gallery is what visitors browse. Logos, posters and portraits usually stay out.') }}</div>
+                    </div>
+                    {% endif %}
                 </div>
                 <div class="card-footer text-end">
                     <button class="btn btn-primary" type="submit">{{ _('Save details') }}</button>

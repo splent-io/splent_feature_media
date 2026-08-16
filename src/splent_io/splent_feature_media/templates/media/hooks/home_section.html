@@ -1,0 +1,16 @@
+{# Homepage section contributed through the home.section slot with:
+     items          : the latest public images, newest first
+     gallery_public : whether /media is browsable (link shown only then) #}
+<section class="container section media-home">
+    <h2 class="section-title">{{ _('Gallery') }}</h2>
+    <div class="gallery-grid" data-lightbox-gallery>
+        {% for m in items %}
+        <a class="gallery-grid__item" href="{{ m.url }}">
+            <img src="{{ m.thumbnail_url }}" alt="{{ m.alt or m.title }}" loading="lazy" decoding="async">
+        </a>
+        {% endfor %}
+    </div>
+    {% if gallery_public %}
+    <p class="media-home__more"><a class="btn btn-primary" href="{{ url_for('media.gallery') }}">{{ _('See all photos') }}</a></p>
+    {% endif %}
+</section>

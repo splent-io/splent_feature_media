@@ -1,0 +1,55 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   splent_feature_media — public gallery toolbar and mosaic view.
+   Token-driven; the grid itself and the lightbox come from the theme.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.gallery-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin: 0 0 1.25rem;
+}
+
+.gallery-toolbar__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: .4rem .85rem;
+    border: 1px solid var(--brand-border, rgba(0, 0, 0, .12));
+    border-radius: 999px;
+    background: var(--brand-surface, transparent);
+    color: var(--brand-heading, inherit);
+    font: inherit;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.gallery-toolbar__btn svg { width: 1rem; height: 1rem; }
+.gallery-toolbar__btn:hover { border-color: var(--brand-primary, #2563eb); color: var(--brand-primary, #2563eb); }
+.gallery-toolbar__btn.is-active {
+    background: var(--brand-primary, #2563eb);
+    border-color: var(--brand-primary, #2563eb);
+    color: var(--brand-primary-contrast, #fff);
+}
+
+/* Mosaic: columns of natural-proportion photos instead of uniform tiles. */
+.gallery-grid--mosaic {
+    display: block;
+    column-count: 3;
+    column-gap: .75rem;
+}
+.gallery-grid--mosaic .gallery-grid__item {
+    display: block;
+    break-inside: avoid;
+    margin: 0 0 .75rem;
+    aspect-ratio: auto;
+    height: auto;
+}
+.gallery-grid--mosaic .gallery-grid__item img { height: auto; object-fit: contain; }
+
+@media (max-width: 900px) { .gallery-grid--mosaic { column-count: 2; } }
+@media (max-width: 520px) { .gallery-grid--mosaic { column-count: 1; } }
+
+.gallery-more { margin: 1.5rem 0 0; text-align: center; }
+.gallery-grid[aria-busy="true"] + .gallery-more .btn { opacity: .6; pointer-events: none; }

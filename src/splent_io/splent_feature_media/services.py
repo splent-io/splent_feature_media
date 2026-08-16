@@ -23,6 +23,27 @@ class MediaService(BaseService):
     def list_public_recent(self):
         return self.repository.list_public_recent()
 
+    def list_public_images(self, limit: int = 6):
+        """The latest gallery images (homepage section, teasers)."""
+        return self.repository.list_public_images(limit)
+
+    def gallery_page(self, page: int = 1, per_page: int = 48):
+        """One page of the public gallery plus whether more follow."""
+        items = self.repository.list_gallery(page, per_page + 1)
+        has_more = len(items) > per_page
+        return items[:per_page], has_more
+
+    def count_gallery(self) -> int:
+        return self.repository.count_gallery()
+
+    def set_in_gallery(self, item, flag: bool):
+        """Put an item in the public gallery or take it out."""
+        if item is None:
+            return None
+        item.in_gallery = bool(flag)
+        db.session.commit()
+        return item
+
     def list_all_recent(self):
         """Every item including restricted ones. Callers must be gated."""
         return self.repository.list_all_recent()
@@ -31,12 +52,14 @@ class MediaService(BaseService):
         """Fetch a single MediaItem by id (or None)."""
         return self.repository.get_by_id(item_id)
 
-    def update_meta(self, item, alt: str = "", title: str = ""):
-        """Update the editable metadata (alt text + title) of a media item."""
+    def update_meta(self, item, alt: str = "", title: str = "", in_gallery=None):
+        """Update the editable metadata (alt text, title, gallery flag)."""
         if item is None:
             return None
         item.alt = alt or ""
         item.title = title or ""
+        if in_gallery is not None:
+            item.in_gallery = bool(in_gallery)
         db.session.commit()
         return item
 
@@ -168,6 +191,8 @@ class MediaService(BaseService):
             size=os.path.getsize(out_path),
             uploaded_at=datetime.utcnow(),
             access=item.access,
+            in_gallery=item.in_gallery,
+            thumbnail=(self.make_thumbnail(candidate) if item.is_public else ""),
             owner_feature=item.owner_feature,
             owner_ref=item.owner_ref,
         )
@@ -182,6 +207,44 @@ class MediaService(BaseService):
         d = os.path.join(current_app.static_folder, "uploads")
         os.makedirs(d, exist_ok=True)
         return d
+
+    THUMB_MAX = 600  # longest side of a gallery thumbnail, px
+
+    def _thumbs_dir(self) -> str:
+        d = os.path.join(self._upload_dir(), "thumbs")
+        os.makedirs(d, exist_ok=True)
+        return d
+
+    def make_thumbnail(self, filename: str) -> str:
+        """Create a web-sized thumbnail for a PUBLIC image already in
+        static/uploads/, returning its filename under uploads/thumbs/ (or ""
+        if it is not an image or cannot be read). Idempotent by name."""
+        src = os.path.join(self._upload_dir(), filename)
+        if not os.path.isfile(src):
+            return ""
+        base, ext = os.path.splitext(filename)
+        ext = (ext or ".jpg").lower()
+        if ext not in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
+            return ""
+        thumb_name = f"{base}.jpg" if ext in (".jpg", ".jpeg") else f"{base}{ext}"
+        dest = os.path.join(self._thumbs_dir(), thumb_name)
+        try:
+            from PIL import Image
+
+            with Image.open(src) as im:
+                im.thumbnail((self.THUMB_MAX, self.THUMB_MAX), Image.LANCZOS)
+                if ext in (".jpg", ".jpeg"):
+                    im = im.convert("RGB")
+                    im.save(dest, "JPEG", quality=82, optimize=True)
+                elif ext == ".png":
+                    im.save(dest, "PNG", optimize=True)
+                elif ext == ".webp":
+                    im.save(dest, "WEBP", quality=82)
+                else:
+                    im.save(dest)
+        except Exception:
+            return ""
+        return thumb_name
 
     def _collision_safe_name(self, upload_dir: str, filename: str) -> str:
         """Return filename, counter-suffixed if it already exists in the dir."""
@@ -200,6 +263,7 @@ class MediaService(BaseService):
         access: str = "public",
         owner_feature: str = "",
         owner_ref: str = "",
+        in_gallery: bool = True,
     ):
         """Persist an uploaded file and record it.
 
@@ -236,7 +300,10 @@ class MediaService(BaseService):
             access=access,
             owner_feature=owner_feature or None,
             owner_ref=owner_ref or None,
+            in_gallery=bool(in_gallery) and access == "public",
         )
+        if access == "public" and (file_storage.mimetype or "").startswith("image/"):
+            item.thumbnail = self.make_thumbnail(candidate)
         db.session.add(item)
         if access == "restricted":
             # The canonical URL of a restricted file is its serving route,
@@ -246,13 +313,14 @@ class MediaService(BaseService):
         db.session.commit()
         return item
 
-    def import_from_url(self, url: str, title: str = "", alt: str = ""):
+    def import_from_url(self, url: str, title: str = "", alt: str = "", in_gallery: bool = False):
         """Download an external image into the media library and record it.
 
         Idempotent by ``source_url``: importing the same URL twice returns the
         existing item. Used to pull remote images (team photos, post thumbnails…)
         into the local library so they are served from the product, not a 3rd
-        party — the WordPress "Media Library" behaviour.
+        party — the WordPress "Media Library" behaviour. Pass ``in_gallery=True``
+        when the file is a photo visitors should browse.
         """
         if not url:
             return None
@@ -299,19 +367,24 @@ class MediaService(BaseService):
             mime_type=content_type or "image/jpeg",
             size=len(resp.content),
             uploaded_at=datetime.utcnow(),
+            in_gallery=bool(in_gallery),
         )
+        if (content_type or "").startswith("image/"):
+            item.thumbnail = self.make_thumbnail(candidate)
         db.session.add(item)
         db.session.commit()
         return item
 
-    def import_from_file(self, path, *, title="", alt="", source_key=None):
+    def import_from_file(self, path, *, title="", alt="", source_key=None, in_gallery=False):
         """Copy a local file into the media library and record it.
 
         The seed-time sibling of ``import_from_url``: seeders bundle images
         inside their feature package and register them here to obtain a public
         URL. Idempotent by ``source_url`` (the caller's ``source_key``, or the
         absolute source path), so re-running a seeder returns the existing item
-        instead of duplicating the file.
+        instead of duplicating the file. Bundled files are illustrations
+        (logos, posters, portraits), so they stay out of the public gallery
+        unless the caller says ``in_gallery=True``.
         """
         if not os.path.isfile(path):
             raise FileNotFoundError(f"Media import source does not exist: {path}")
@@ -338,7 +411,10 @@ class MediaService(BaseService):
             mime_type=mimetypes.guess_type(candidate)[0] or "",
             size=os.path.getsize(dest),
             uploaded_at=datetime.utcnow(),
+            in_gallery=bool(in_gallery),
         )
+        if (item.mime_type or "").startswith("image/"):
+            item.thumbnail = self.make_thumbnail(candidate)
         db.session.add(item)
         db.session.commit()
         return item
